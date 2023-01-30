@@ -1,19 +1,21 @@
 var fs = require('fs');
 var path = require('path');
 
+const configPath = path.join(__dirname, 'config.json');
+
 const loadConfig = () => {
-    if (!fs.existsSync(path.join(__dirname, 'config.json'))) {
-        fs.writeFileSync(path.join(__dirname, 'config.json'), '{}');
+    if (!fs.existsSync(configPath)) {
+        fs.writeFileSync(configPath, '{}');
     }
 
-    return JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json')));
+    return JSON.parse(fs.readFileSync(configPath));
 };
 
 
 const setConfig = (key, value) => {
     var config = loadConfig();
     config[key] = value;
-    fs.writeFileSync(path.join(__dirname, 'config.json'), JSON.stringify(config));
+    fs.writeFileSync(configPath, JSON.stringify(config));
 }
 
 const getConfig = (key) => {
@@ -24,7 +26,7 @@ const getConfig = (key) => {
 const removeConfig = (key) => {
     var config = loadConfig();
     delete config[key];
-    fs.writeFileSync(path.join(__dirname, 'config.json'), JSON.stringify(config));
+    fs.writeFileSync(configPath, JSON.stringify(config));
 }
 
 module.exports = {
