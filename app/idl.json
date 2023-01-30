@@ -29,11 +29,105 @@
         {
           "name": "description",
           "type": "string"
+        },
+        {
+          "name": "period1",
+          "type": "i64"
+        },
+        {
+          "name": "period2",
+          "type": "i64"
         }
       ]
+    },
+    {
+      "name": "getTime",
+      "accounts": [
+        {
+          "name": "tender",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "makeBid",
+      "accounts": [
+        {
+          "name": "tender",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "validateBid",
+      "accounts": [
+        {
+          "name": "tender",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "endTender",
+      "accounts": [
+        {
+          "name": "tender",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "getWinner",
+      "accounts": [
+        {
+          "name": "tender",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "Timer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "t1",
+            "type": "i64"
+          },
+          {
+            "name": "t2",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "Tender",
       "type": {
@@ -53,6 +147,23 @@
           }
         ]
       }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NotInBiddingPhase",
+      "msg": "You can not submit your bid outside the bidding phase."
+    },
+    {
+      "code": 6001,
+      "name": "NotInBidValidationPhase",
+      "msg": "You can not reveal your bid outside the validation phase."
+    },
+    {
+      "code": 6002,
+      "name": "TenderTimeNotEnded",
+      "msg": "Tender is not finished yet."
     }
   ],
   "metadata": {
