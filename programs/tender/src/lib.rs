@@ -32,14 +32,23 @@ pub mod tender {
         Ok(())
     }
 
-    pub fn make_bid(ctx: Context<Instruction>) -> Result<()> {
+    pub fn make_bid(ctx: Context<Instruction>, bid_hash: String) -> Result<()> {
         let tender_account = &mut ctx.accounts.tender;
         
+        // Make sure the user is not bidding on their own tender.
         assert!(tender_account.authority != *ctx.accounts.user.key, "You can not bid on your own tender.");
         
         let timer = &tender_account.timer;
 
         timer.is_bidding_time().unwrap();
+
+        tender_account.upsert_bid(*ctx.accounts.user.key, bid_hash.clone());
+
+        // Emit the event.
+        emit!(BidMade {
+            user: *ctx.accounts.user.key,
+            bid_hash: bid_hash,
+        });
 
         Ok(())
     }
@@ -47,6 +56,7 @@ pub mod tender {
     pub fn validate_bid(ctx: Context<Instruction>) -> Result<()> {
         let tender_account = &mut ctx.accounts.tender;
         
+        // Make sure the user is not validating their own bid on their own tender.
         assert!(tender_account.authority != *ctx.accounts.user.key, "You can not validate bid on your own tender.");
 
         let timer = &tender_account.timer;
@@ -59,6 +69,7 @@ pub mod tender {
     pub fn end_tender(ctx: Context<Instruction>) -> Result<()> {
         let tender_account = &mut ctx.accounts.tender;
 
+        // Make sure the user is the tender owner.
         assert!(tender_account.authority == *ctx.accounts.user.key, "Only tender owner can end the tender.");
 
         let timer = &tender_account.timer;
@@ -121,4 +132,16 @@ pub struct Tender {
     pub finished: bool,
     pub timer: timer::Timer,
     pub bids: HashMap<Pubkey, [u8; 32]>,
+}
+
+#[event]
+pub struct BidMade {
+    pub user: Pubkey,
+    pub bid_hash: String,
+}
+
+impl Tender {
+    pub fn upsert_bid(&mut self, user_pubkey: Pubkey, bid_hash: String)  {
+        self.bids.insert(user_pubkey, helpers::string_hex_to_buffer(bid_hash));
+    }
 }

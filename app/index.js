@@ -80,7 +80,36 @@ async function createTender() {
   }
 }
 
+async function getBidFromConsole(account1, account2) {
+  const bid = {}
+  bid.amount = await question('Bid Amount: ');
+  bid.randomString = await question('Random string for hash: ');
+  bid.hash = keccak256(
+    bid.amount +
+    bid.randomString
+  ).toString('hex')
+
+  //rl.pause()
+  rl.close()
+  // Save bid to config
+  setConfig(`tender${account1}bidder${account2}`, bid)
+  
+  console.log('Creating bid with account:', account2)
+  console.log('For tender account:', account1)
+
+  return bid
+}
+
+const initEventListeners = async (program) => {
+  await program.addEventListener("BidMade", (event, slot) => {
+    console.log("BidMade", event, slot)
+  });
+}
 const main = async () => {
+  if(argv[2] === 'eventListeners'){
+    const program = initProgram()
+    await initEventListeners(program)
+  }
   if(argv[2] === 'initTender'){
     await createTender()
   }
@@ -106,7 +135,8 @@ const main = async () => {
     const program = initProgram()
     const account1 = anchor.web3.Keypair.fromSecretKey(new Uint8Array(getConfig(argv[3]).split(",").map(Number)));
     const account2 = anchor.web3.Keypair.fromSecretKey(new Uint8Array(getConfig(argv[4]).split(",").map(Number)));
-    await makeBid(program, account1, account2)
+    const bid = await getBidFromConsole(argv[3], argv[4])
+    await makeBid(program, account1, account2, bid)
   }
   if (argv[2] === 'validateBid') {
     const program = initProgram()
@@ -134,8 +164,8 @@ async function getWinner(program, account){
   .rpc();
 }
 
-async function makeBid(program, account1, account2){
-  await program.methods.makeBid()
+async function makeBid(program, account1, account2, bid){
+  await program.methods.makeBid(bid.hash)
   .accounts({
     user: account2.publicKey,
     tender: account1.publicKey,
