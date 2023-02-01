@@ -3,14 +3,14 @@ mod errors;
 
 #[account]
 pub struct Timer {
-    pub t1: i64,
-    pub t2: i64,
+    pub t1: u64,
+    pub t2: u64,
 }
 
 impl Timer {    
-    pub fn init_timer(&mut self, period1: i64, period2: i64) -> Result<()> {
+    pub fn init_timer(&mut self, period1: u64, period2: u64) -> Result<()> {
         // Get the current time.
-        let current_time = Clock::get()?.unix_timestamp;
+        let current_time = Clock::get()?.unix_timestamp as u64;
         let seconds_in_day = 60;
         
         // Calculate the time periods.
@@ -20,21 +20,21 @@ impl Timer {
         Ok(())
     }
     pub fn is_bidding_time(&self) -> Result<()> {
-        let now = Clock::get()?.unix_timestamp;
+        let now = Clock::get()?.unix_timestamp as u64;
         if self.t1 < now {
             return Err(errors::ErrorCode::NotInBiddingPhase.into());
         }
         Ok(())
     }
     pub fn is_bid_validation_time(&self) -> Result<()> {
-        let now = Clock::get()?.unix_timestamp;
+        let now = Clock::get()?.unix_timestamp as u64;
         if self.t1 < now && self.t2 > now {
             return Ok(());
         }
         return Err(errors::ErrorCode::NotInBidValidationPhase.into());
     }
     pub fn is_end_time(&self) -> Result<()> {
-        let now = Clock::get()?.unix_timestamp;
+        let now = Clock::get()?.unix_timestamp as u64;
         if self.t2 > now  {
             return Err(errors::ErrorCode::TenderTimeNotEnded.into());
         }

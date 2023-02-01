@@ -1315,6 +1315,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "hex",
+ "sha3",
 ]
 
 [[package]]

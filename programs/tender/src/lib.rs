@@ -8,7 +8,7 @@ declare_id!("Esb1EUAFYCuUQmffqLmrMJT6kTExFHmrvjhCDV9AtZKs");
 pub mod tender {
     use super::*;
     
-    pub fn init_tender(ctx: Context<InitTender>, name: String, description: String, period1: i64, period2: i64, tender_hash: String) -> Result<()> {
+    pub fn init_tender(ctx: Context<InitTender>, name: String, description: String, period1: u64, period2: u64, tender_hash: String) -> Result<()> {
         // Initialize the timer.
         ctx.accounts.tender.timer.init_timer(period1, period2).unwrap();
         
@@ -46,14 +46,14 @@ pub mod tender {
 
         // Emit the event.
         emit!(BidMade {
-            user: *ctx.accounts.user.key,
+            account: *ctx.accounts.user.key,
             bid_hash: bid_hash,
         });
 
         Ok(())
     }
 
-    pub fn validate_bid(ctx: Context<Instruction>) -> Result<()> {
+    pub fn validate_bid(ctx: Context<Instruction>, amount: u64, random_string: String) -> Result<()> {
         let tender_account = &mut ctx.accounts.tender;
         
         // Make sure the user is not validating their own bid on their own tender.
@@ -63,10 +63,24 @@ pub mod tender {
 
         timer.is_bid_validation_time().unwrap();
 
+        tender_account.is_bid_valid(*ctx.accounts.user.key, amount, random_string).unwrap();
+        
+        // If the bid is the lowest bid, update the winner and the best bid.
+        if amount < tender_account.best_bid || tender_account.best_bid == 0  {
+            tender_account.best_bid = amount;
+            tender_account.winner = *ctx.accounts.user.key;
+
+            // Emit the event.
+            emit!(NewWinner {
+                account: *ctx.accounts.user.key,
+                amount: amount,
+            });
+        }
+
         Ok(())
     }
 
-    pub fn end_tender(ctx: Context<Instruction>) -> Result<()> {
+    pub fn end_tender(ctx: Context<Instruction>, min: u64, max: u64, estimated: u64, random_string: String) -> Result<()> {
         let tender_account = &mut ctx.accounts.tender;
 
         // Make sure the user is the tender owner.
@@ -75,6 +89,28 @@ pub mod tender {
         let timer = &tender_account.timer;
 
         timer.is_end_time().unwrap();
+
+        tender_account.is_tender_valid(min, max, estimated, random_string).unwrap();
+
+        // Update the tender_account with the revealed values.
+        tender_account.minimum = min;
+        tender_account.maximum = max;
+        tender_account.estimated = estimated;
+        tender_account.finished = true;
+
+        // Set the tender status.
+        let mut tender_status = "Tender success";
+        if tender_account.best_bid < min || tender_account.best_bid > max {
+            tender_status = "Tender failed";
+        }
+
+        // Emit the event.
+        emit!(TenderEnded {
+            min: min,
+            max: max,
+            estimated: estimated,
+            tender_status: tender_status.to_string(),
+        });
 
         Ok(())
     }
@@ -85,6 +121,16 @@ pub mod tender {
         let timer = &tender_account.timer;
 
         timer.is_end_time().unwrap();
+
+        // Set the tender status.
+        let mut tender_status = "Tender success";
+        if tender_account.best_bid < tender_account.minimum || tender_account.best_bid > tender_account.maximum {
+            tender_status = "Tender failed";
+        }
+
+        msg!("Winner: {}", tender_account.winner);
+        msg!("Best bid: {}", tender_account.best_bid);
+        msg!("Tender status: {}", tender_status);
 
         Ok(())
     }
@@ -134,14 +180,74 @@ pub struct Tender {
     pub bids: HashMap<Pubkey, [u8; 32]>,
 }
 
-#[event]
-pub struct BidMade {
-    pub user: Pubkey,
-    pub bid_hash: String,
-}
-
 impl Tender {
     pub fn upsert_bid(&mut self, user_pubkey: Pubkey, bid_hash: String)  {
         self.bids.insert(user_pubkey, helpers::string_hex_to_buffer(bid_hash));
     }
+    pub fn is_bid_valid(&mut self, user_pubkey: Pubkey, amount: u64, random_string: String) -> Result<()> {
+        // Check if the bid is created by the user.
+        assert!(self.bids.contains_key(&user_pubkey), "Your bid not found.");
+        
+        // Get the bid hash.
+        let bid_hash = self.bids.get(&user_pubkey).unwrap();
+        
+        // Concatenate the string.
+        let mut str_to_hash: String = String::new();
+
+        str_to_hash.push_str(&amount.to_string());
+        str_to_hash.push_str("-");
+        str_to_hash.push_str(&random_string);
+
+        // Hash the string.
+        let result_hash = &helpers::hash_with_keccak256(str_to_hash);
+
+        // Check if the hash matches the bid hash.
+        assert!(bid_hash == result_hash, "Your bid hash does not match.");
+
+        // Reveal the bid.
+        let mut array: [u8; 32] = [0; 32];
+        array[0..8].copy_from_slice(&amount.to_le_bytes());
+
+        self.bids.insert(user_pubkey, array);
+
+        Ok(())
+    }
+    pub fn is_tender_valid(&mut self, min: u64, max: u64, estimated: u64, random_string: String) -> Result<()> {
+        // Concatenate the values and hash them.
+        let mut str_to_hash: String = String::new();
+
+        str_to_hash.push_str(&min.to_string());
+        str_to_hash.push_str("-");
+        str_to_hash.push_str(&max.to_string());
+        str_to_hash.push_str("-");
+        str_to_hash.push_str(&estimated.to_string());
+        str_to_hash.push_str("-");
+        str_to_hash.push_str(&random_string);
+
+        // Hash the string.
+        let result_hash = &helpers::hash_with_keccak256(str_to_hash);
+
+        // Check if the hash matches the tender hash.
+        assert!(self.hash == result_hash.as_slice(), "Tender hash does not match.");
+
+        Ok(())
+    }
+}
+
+#[event]
+pub struct BidMade {
+    pub account: Pubkey,
+    pub bid_hash: String,
+}
+#[event]
+pub struct NewWinner {
+    pub account: Pubkey,
+    pub amount: u64,
+}
+#[event]
+pub struct TenderEnded {
+    pub min: u64,
+    pub max: u64,
+    pub estimated: u64,
+    pub tender_status: String,
 }
