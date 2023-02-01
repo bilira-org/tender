@@ -27,6 +27,9 @@ pub mod tender {
 
     pub fn make_bid(ctx: Context<Instruction>) -> Result<()> {
         let tender_account = &mut ctx.accounts.tender;
+        
+        assert!(tender_account.authority != *ctx.accounts.user.key, "You can not bid on your own tender.");
+        
         let timer = &tender_account.timer;
 
         timer.is_bidding_time().unwrap();
@@ -36,6 +39,9 @@ pub mod tender {
 
     pub fn validate_bid(ctx: Context<Instruction>) -> Result<()> {
         let tender_account = &mut ctx.accounts.tender;
+        
+        assert!(tender_account.authority != *ctx.accounts.user.key, "You can not validate bid on your own tender.");
+
         let timer = &tender_account.timer;
 
         timer.is_bid_validation_time().unwrap();
@@ -45,6 +51,9 @@ pub mod tender {
 
     pub fn end_tender(ctx: Context<Instruction>) -> Result<()> {
         let tender_account = &mut ctx.accounts.tender;
+
+        assert!(tender_account.authority == *ctx.accounts.user.key, "Only tender owner can end the tender.");
+
         let timer = &tender_account.timer;
 
         timer.is_end_time().unwrap();
@@ -54,6 +63,7 @@ pub mod tender {
     
     pub fn get_winner(ctx: Context<GetWinner>) -> Result<()> {
         let tender_account = &mut ctx.accounts.tender;
+
         let timer = &tender_account.timer;
 
         timer.is_end_time().unwrap();
