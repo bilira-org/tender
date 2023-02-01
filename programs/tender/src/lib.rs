@@ -1,17 +1,24 @@
 use anchor_lang::prelude::*;
+use std::collections::HashMap;
 mod timer;
+mod helpers;
 declare_id!("Esb1EUAFYCuUQmffqLmrMJT6kTExFHmrvjhCDV9AtZKs");
 
 #[program]
 pub mod tender {
     use super::*;
     
-    pub fn init_tender(ctx: Context<InitTender>, name: String, description: String, period1: i64, period2: i64) -> Result<()> {
+    pub fn init_tender(ctx: Context<InitTender>, name: String, description: String, period1: i64, period2: i64, tender_hash: String) -> Result<()> {
+        // Initialize the timer.
+        ctx.accounts.tender.timer.init_timer(period1, period2).unwrap();
+        
         ctx.accounts.tender.name = name;
         ctx.accounts.tender.description = description;
         ctx.accounts.tender.authority = *ctx.accounts.tender.to_account_info().key;
-        ctx.accounts.tender.timer.init_timer(period1, period2).unwrap();
-        
+        // Cast the tender hash to a buffer.
+        ctx.accounts.tender.hash = helpers::string_hex_to_buffer(tender_hash);
+        ctx.accounts.tender.finished = false;
+
         Ok(())
     }
 
@@ -105,5 +112,13 @@ pub struct Tender {
     pub authority: Pubkey,
     pub name: String,
     pub description: String,
+    pub minimum: u64,
+    pub maximum: u64,
+    pub estimated: u64,
+    pub hash: [u8; 32],
+    pub best_bid: u64,
+    pub winner: Pubkey,
+    pub finished: bool,
     pub timer: timer::Timer,
+    pub bids: HashMap<Pubkey, [u8; 32]>,
 }

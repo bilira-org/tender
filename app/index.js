@@ -1,7 +1,15 @@
 const anchor = require("@coral-xyz/anchor");
 const { setConfig, getConfig } = require('./config')
 const { ConfirmOptions } =require("@solana/web3.js");
+const { keccak256 } = require('js-sha3')
 const { argv } = require("process");
+const util = require('util');
+const rl = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+const question = util.promisify(rl.question).bind(rl);
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
@@ -17,8 +25,8 @@ const createTestAccounts = () => {
   console.log('Creating test accounts')
   ;['A', 'B', 'C', 'D', 'E'].forEach((letter) => {
     const account = createAccount()
-    setConfig(letter, account.secretKey.toString() )
-    console.log(letter, account.publicKey.toString() )
+    setConfig(letter, account.secretKey.toString())
+    console.log(letter, account.publicKey.toString())
   })
 }
 
@@ -31,16 +39,59 @@ function initProgram(){
   return program
 }
 
+async function createTender() {
+  try {
+    const tender = {}
+    
+    tender.name = await question('Tender name: ');
+    tender.description = await question('Description: ');
+    tender.minimum = await question('Minimum bid: ');
+    tender.maximum = await question('Maximum bid: ');
+    tender.estimated = await question('Estimated bid: ');
+    tender.period1 = await question('Period 1: ');
+    tender.period2 = await question('Period 2: ');
+    tender.randomString = await question('Random string for hash: ');
+    tender.hash = keccak256(
+      tender.minimum.toString() + 
+      tender.maximum.toString() + 
+      tender.estimated.toString() +
+      tender.randomString
+    ).toString('hex')
+    
+    const accountName = await question('Account to create with: ["A", "B", "C", "D", "E"]');
+
+    console.log(tender)
+    console.log('Creating tender with account:', accountName)
+
+    const valid = await question('Do you want to create this tender? (y/n) ');
+    rl.close()
+    
+    if(valid === 'y'){
+      // Save tender to config
+      setConfig(`tender${accountName}`, tender)
+      const program = initProgram()
+      const account = anchor.web3.Keypair.fromSecretKey(new Uint8Array(getConfig(accountName).split(",").map(Number)));
+      await initTender(program, account, tender)
+    } else {
+      console.log('Tender creation cancelled')
+    }
+  } catch (err) {
+    console.error('Question rejected', err);
+  }
+}
+
 const main = async () => {
-  console.log(argv)
+  if(argv[2] === 'initTender'){
+    await createTender()
+  }
   if (argv[2] === 'createTestAccounts') {
     createTestAccounts()
   }
-  if (argv[2] === 'initTender') {
-    const program = initProgram()
-    const account = anchor.web3.Keypair.fromSecretKey(new Uint8Array(getConfig(argv[3]).split(",").map(Number)));
-    await initTender(program, account)
-  }
+  // if (argv[2] === 'initTender') {
+  //   const program = initProgram()
+  //   const account = anchor.web3.Keypair.fromSecretKey(new Uint8Array(getConfig(argv[3]).split(",").map(Number)));
+  //   await initTender(program, account)
+  // }
   if (argv[2] === 'getTender') {
     const program = initProgram()
     const account = anchor.web3.Keypair.fromSecretKey(new Uint8Array(getConfig(argv[3]).split(",").map(Number)));
@@ -111,9 +162,14 @@ async function getTime(program, account){
   console.log(t)
 }
 
-async function initTender(program, account){
-  await program.methods.initTender("Tender 2", "This is a tender", new anchor.BN(1), new anchor.BN(1))
-  .accounts({
+async function initTender(program, account, tender){
+  await program.methods.initTender(
+    tender.name, 
+    tender.description, 
+    new anchor.BN(tender.period1), 
+    new anchor.BN(tender.period2),
+    tender.hash
+  ).accounts({
     tender: account.publicKey,
     user: program.provider.wallet.publicKey,
     systemProgram: anchor.web3.SystemProgram.programId,
