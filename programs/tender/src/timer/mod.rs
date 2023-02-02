@@ -21,23 +21,23 @@ impl Timer {
     }
     pub fn is_bidding_time(&self) -> Result<()> {
         let now = Clock::get()?.unix_timestamp as u64;
-        if self.t1 < now {
-            return Err(errors::ErrorCode::NotInBiddingPhase.into());
-        }
+
+        require!(self.t1 > now, errors::ErrorCode::NotInBiddingPhase);
+
         Ok(())
     }
     pub fn is_bid_validation_time(&self) -> Result<()> {
         let now = Clock::get()?.unix_timestamp as u64;
-        if self.t1 < now && self.t2 > now {
-            return Ok(());
-        }
-        return Err(errors::ErrorCode::NotInBidValidationPhase.into());
+
+        require!(self.t1 > now || self.t2 < now, errors::ErrorCode::NotInBidValidationPhase);
+        
+        Ok(())
     }
     pub fn is_end_time(&self) -> Result<()> {
         let now = Clock::get()?.unix_timestamp as u64;
-        if self.t2 > now  {
-            return Err(errors::ErrorCode::TenderTimeNotEnded.into());
-        }
+
+        require!(self.t2 < now, errors::ErrorCode::TenderTimeNotEnded);
+        
         Ok(())
     }
 }

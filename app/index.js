@@ -1,7 +1,5 @@
 const anchor = require("@coral-xyz/anchor");
 const { setConfig, getConfig } = require('./config')
-const { ConfirmOptions } =require("@solana/web3.js");
-const crypto = require('crypto');
 const { keccak256 } = require('js-sha3')
 const { argv } = require("process");
 const util = require('util');
@@ -119,12 +117,12 @@ async function getBidFromConsole(account1, account2) {
 const initEventListeners = async (program) => {
   program.addEventListener("BidMade", (event) => {
     console.log("** New Bid Made **")
-    console.log("User: ", event.user.toString())
+    console.log("User: ", event.account.toString())
     console.log('Hash: ', event.bidHash.toString())
   });
   program.addEventListener("NewWinner", (event) => {
     console.log("** There is a new WINNER! **")
-    console.log("User: ", event.user.toString())
+    console.log("User: ", event.account.toString())
     console.log("Amount: ", event.amount.toString())
   });
   program.addEventListener("TenderEnded", (event) => {
