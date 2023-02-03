@@ -29,7 +29,7 @@ impl Timer {
     pub fn is_bid_validation_time(&self) -> Result<()> {
         let now = Clock::get()?.unix_timestamp as u64;
 
-        require!(self.t1 > now || self.t2 < now, errors::ErrorCode::NotInBidValidationPhase);
+        require!(self.t1 < now && now < self.t2, errors::ErrorCode::NotInBidValidationPhase);
         
         Ok(())
     }
