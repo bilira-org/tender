@@ -273,7 +273,7 @@ async function getTender(program, account) {
   console.log('Finished:', tender.finished)
   console.log('Winner:', tender.winner.toString())
   // console.log(tender)
-} //2772a994053a613490c12a6da60bcb7c854cde3b5d573eff7c3a50ef4306a30f
+}
 
 async function validateBid(program, account1, account2, account1Bid) {
   await program.methods
