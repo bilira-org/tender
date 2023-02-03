@@ -32,11 +32,15 @@
         },
         {
           "name": "period1",
-          "type": "i64"
+          "type": "u64"
         },
         {
           "name": "period2",
-          "type": "i64"
+          "type": "u64"
+        },
+        {
+          "name": "tenderHash",
+          "type": "string"
         }
       ]
     },
@@ -65,7 +69,12 @@
           "isSigner": true
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "bidHash",
+          "type": "string"
+        }
+      ]
     },
     {
       "name": "validateBid",
@@ -81,7 +90,16 @@
           "isSigner": true
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "randomString",
+          "type": "string"
+        }
+      ]
     },
     {
       "name": "endTender",
@@ -97,7 +115,24 @@
           "isSigner": true
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "min",
+          "type": "u64"
+        },
+        {
+          "name": "max",
+          "type": "u64"
+        },
+        {
+          "name": "estimated",
+          "type": "u64"
+        },
+        {
+          "name": "randomString",
+          "type": "string"
+        }
+      ]
     },
     {
       "name": "getWinner",
@@ -119,11 +154,11 @@
         "fields": [
           {
             "name": "t1",
-            "type": "i64"
+            "type": "u64"
           },
           {
             "name": "t2",
-            "type": "i64"
+            "type": "u64"
           }
         ]
       }
@@ -144,9 +179,99 @@
           {
             "name": "description",
             "type": "string"
-          }
+          },
+          {
+            "name": "minimum",
+            "type": "u64"
+          },
+          {
+            "name": "maximum",
+            "type": "u64"
+          },
+          {
+            "name": "estimated",
+            "type": "u64"
+          },
+          {
+            "name": "hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bestBid",
+            "type": "u64"
+          },
+          {
+            "name": "winner",
+            "type": "publicKey"
+          },
+          {
+            "name": "finished",
+            "type": "bool"
+          } 
         ]
       }
+    }
+  ],
+  "events": [
+    {
+      "name": "BidMade",
+      "fields": [
+        {
+          "name": "account",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "bidHash",
+          "type": "string",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "NewWinner",
+      "fields": [
+        {
+          "name": "account",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "TenderEnded",
+      "fields": [
+        {
+          "name": "min",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "max",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "estimated",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "tenderStatus",
+          "type": "string",
+          "index": false
+        }
+      ]
     }
   ],
   "errors": [

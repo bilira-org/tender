@@ -1,4 +1,9 @@
 {
+    "name": "tender",
+    "version": "1.0.0",
+    "description": "Open Procedure Tendering in Solana",
+    "author": "K. Uğurcan Uncuoğlu & Samed Kahyaoğlu",
+    "license": "MIT",
     "scripts": {
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
         "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
